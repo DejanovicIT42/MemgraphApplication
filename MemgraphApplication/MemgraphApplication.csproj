@@ -6,4 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Neo4j.Driver.Simple" Version="5.25.0" />
+  </ItemGroup>
+
 </Project>
