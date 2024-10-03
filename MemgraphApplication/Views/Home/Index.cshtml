@@ -2,33 +2,138 @@
     ViewData["Title"] = "Article Graph";
 }
 
-
+﻿
+<!DOCTYPE html>
+<html>
 <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/orb/orb.css">
-    <script src="https://cdn.jsdelivr.net/npm/orb"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://uploads-ssl.webflow.com/5e7ceb09657a69bdab054b3a/5ea9d03561073b122a2bcf58_favicon.png" rel="shortcut icon" type="image/x-icon">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js" charset="utf-8"></script>
+
+    <title>Graph Demo</title>
 </head>
 <body>
-    <h1>Article Graph Visualization</h1>
-    <div id="graph-container" style="width: 100%; height: 600px;"></div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand">Graph Demo</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </nav>
 
-    <script>
-        const container = document.getElementById('graph-container');
+    <div id="graph"></div>
 
-        fetch('/api/articles')
-            .then(response => response.json())
-            .then(data => {
-                const graph = new orb.Graph({
-                    container: container,
-                    nodeColor: 'blue',
-                    edgeColor: 'green',
-                    nodeSize: 20,
-                    edgeWidth: 2,
-                });
+    <script type="text/javascript">
+        const width = window.innerWidth, height = window.innerHeight;
 
-                data.nodes.forEach(node => graph.addNode(node.id, { label: node.label }));
-                data.edges.forEach(edge => graph.addEdge(edge.source, edge.target));
+        const svg = d3.select("#graph").append("svg").attr("width", width).attr("height", height).attr("pointer-events", "all");
 
-                graph.draw();
-            });
+        var div = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        d3.json("/graph").then(function (graph) {
+
+
+            const links = graph.links.map(d => Object.create(d));
+            const nodes = graph.nodes.map(d => Object.create(d));
+
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.title))
+                .force("charge", d3.forceManyBody())
+                .force("center", d3.forceCenter(width / 2, height / 2));
+
+            var g = svg.append("g")
+                .attr("class", "everything");
+
+            const link = g.append("g").selectAll("lines")
+                .data(links).enter().append("line").attr("class", "link");
+
+            const node = g.append("g").selectAll("circle")
+                .data(nodes).enter().append("circle")
+                .attr("class", function (d) { return "node " + d.label; })
+                .attr("r", 10)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended))
+
+
+            node.append("title").text(function (d) { return d.name; })
+
+            node.on("mouseover", function (d) { tooltip.text(d.name); return tooltip.style("visibility", "visible"); });
+            node.on("mousemove", function () { return tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px"); });
+            node.on("mouseout", function () { return tooltip.style("visibility", "hidden"); });
+
+            simulation
+                .nodes(nodes)
+                .on("tick", ticked);
+
+            simulation
+                .force("link")
+                .links(links);
+
+            var zoom_handler = d3.zoom()
+                .on("zoom", zoom_actions);
+
+            function zoom_actions() {
+                g.attr("transform", event.transform);
+            }
+
+            svg.call(zoom_handler);
+
+            function ticked() {
+                link.attr("x1", function (d) { return d.source.x; })
+                    .attr("y1", function (d) { return d.source.y; })
+                    .attr("x2", function (d) { return d.target.x; })
+                    .attr("y2", function (d) { return d.target.y; });
+
+                node.attr("cx", function (d) { return d.x; })
+                    .attr("cy", function (d) { return d.y; });
+            }
+
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+        });
+
     </script>
+
+    <style type="text/css">
+        .node {
+            stroke: #222;
+            stroke-width: 1.5px;
+        }
+
+            .node.airport {
+                fill: #BBB;
+            }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: .6;
+            stroke-width: 1px;
+        }
+    </style>
+
+
 </body>
+</html>

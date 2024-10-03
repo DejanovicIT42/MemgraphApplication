@@ -15,34 +15,37 @@
 
     public class Article
     {
+
+        public int ArticleID { get; set; }
+        public int PMID { get; set; }
         public string Title { get; }
         public string Label { get; }
 
-        public Article(string title, string label)
+        public Article(int articleID, int pmid)
         {
-            Title = title;
-            Label = label;
+            ArticleID = articleID;
+            PMID = pmid;
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is Article node &&
-                   Title == node.Title &&
-                   Label == node.Label;
-        }
+        //public override bool Equals(object obj)
+        //{
+        //    return obj is Article node &&
+        //           ArticleID == node.ArticleID &&
+        //           PMID == node.pmid;
+        //}
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Title, Label);
+            return HashCode.Combine(ArticleID, PMID);
         }
     }
 
     public class Citation
     {
-        public string Source { get; }
-        public string Target { get; }
+        public int Source { get; }
+        public int Target { get; }
 
-        public Citation(string source, string target)
+        public Citation(int source, int target)
         {
             Source = source;
             Target = target;

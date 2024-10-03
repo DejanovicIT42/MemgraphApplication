@@ -14,33 +14,38 @@ namespace MemgraphApplication.Repositories
 
         public ArticleRepository(IDriver driver)
         {
-            _driver = driver;
+            //_driver = driver;
+            _driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.None);
+            using var session = _driver.Session();
         }
 
         public async Task<Graph> FetchGraph(int limit)
         {
-            var session = _driver.AsyncSession(WithDatabase);
+            var session = _driver.AsyncSession();
             try
             {
-                return await session.ReadTransactionAsync(async transaction =>
+                return await session.ExecuteReadAsync(async transaction =>
                 {
-                    var cursor = await transaction.RunAsync(@"MATCH (origin:Airport)-[f:IS_FLYING_TO]->(dest:Airport) " +
-                        "WITH origin, dest ORDER BY origin.name, dest.name " +
-                        "RETURN origin.NAME AS origin_air, dest.NAME AS dest_air", new { limit });
+                    var cursor = await transaction.RunAsync(@"MATCH (a:Article)-[r]->(b:Article)" +
+                        "RETURN a.ArticleID AS source, a.PMID AS sourcePMID, b.ArticleID AS target, b.PMID AS targetPMID");
                     var nodes = new List<Article>();
                     var links = new List<Citation>();
+
                     var records = await cursor.ToListAsync();
+
                     foreach (var record in records)
                     {
-                        var orgAirport = new Article(title: record["origin_air"].As<string>(), label: "airport");
-                        var originAirportIndex = nodes.Count;
-                        nodes.Add(orgAirport);
+                        var sourceArticle = new Article(record["source"].As<int>(), record["sourcePMID"].As<int>());
+                        var originArticleIndex = nodes.Count;
+                        nodes.Add(sourceArticle);
 
-                        var destAirport = new Article(record["dest_air"].As<string>(), "airport");
-                        var destAirportIndex = nodes.IndexOf(destAirport);
-                        destAirportIndex = destAirportIndex == -1 ? nodes.Count : destAirportIndex;
-                        nodes.Add(destAirport);
-                        links.Add(new Citation(destAirport.Title, orgAirport.Title));
+                        var targetArticle = new Article(record["target"].As<int>(), record["targetPMID"].As<int>());
+                        var destArticleIndex = nodes.IndexOf(targetArticle);
+                        destArticleIndex = destArticleIndex == -1 ? nodes.Count : destArticleIndex;
+                        nodes.Add(targetArticle);
+
+
+                        links.Add(new Citation(sourceArticle.ArticleID, targetArticle.ArticleID));
 
                     }
                     return new Graph(nodes, links);
@@ -57,11 +62,13 @@ namespace MemgraphApplication.Repositories
         private void WithDatabase(SessionConfigBuilder sessionConfigBuilder)
         {
             sessionConfigBuilder.WithDatabase(Database());
+
         }
 
         private string Database()
         {
             return System.Environment.GetEnvironmentVariable("DATABASE") ?? "flights";
+
         }
 
     }
