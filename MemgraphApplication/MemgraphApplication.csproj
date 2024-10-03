@@ -10,4 +10,8 @@
     <PackageReference Include="Neo4j.Driver.Simple" Version="5.25.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Datasets\" />
+  </ItemGroup>
+
 </Project>
