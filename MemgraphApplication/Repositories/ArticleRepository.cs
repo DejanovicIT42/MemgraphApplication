@@ -21,13 +21,32 @@ namespace MemgraphApplication.Repositories
 
         public async Task<Graph> FetchGraph(int limit)
         {
+
             var session = _driver.AsyncSession();
             try
             {
                 return await session.ExecuteReadAsync(async transaction =>
                 {
-                    var cursor = await transaction.RunAsync(@"MATCH (a:Article)-[r]->(b:Article)" +
-                        "RETURN a.ArticleID AS source, a.PMID AS sourcePMID, b.ArticleID AS target, b.PMID AS targetPMID");
+                    //var cursor = await transaction.RunAsync(@"MATCH (a:Article)-[r]->(b:Article)" +
+                    //    "RETURN a.ArticleID AS source, a.PMID AS sourcePMID, b.ArticleID AS target, b.PMID AS targetPMID" +
+                    //    "LIMIT $limit",
+                    //    new { limit });
+
+                    var cursor = await transaction.RunAsync(@"MATCH (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
+                        "RETURN a.ArticleID AS source, b.ArticleID AS target");
+
+
+                    //var cursor = await transaction.RunAsync(@"MATCH path = (n)-[r]->(m) " +
+                    //    "WITH DISTINCT path, n, m" +
+                    //    "FOREACH(i IN CASE WHEN m IS NOT NULL THEN[1] ELSE[] END | " +
+                    //    "FOREACH(x IN[m] | SET x.visited = true)) " +
+                    //    "RETURN DISTINCT path" +
+                    //    "LIMIT 100");
+
+                    //var cursor = await transaction.RunAsync(@"MATCH (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
+                    //    "RETURN a, r, b;");
+
+
                     var nodes = new List<Article>();
                     var links = new List<Citation>();
 
@@ -35,17 +54,20 @@ namespace MemgraphApplication.Repositories
 
                     foreach (var record in records)
                     {
-                        var sourceArticle = new Article(record["source"].As<int>(), record["sourcePMID"].As<int>());
+                        var sourceArticle = new Article(record["source"].As<int>());
                         var originArticleIndex = nodes.Count;
                         nodes.Add(sourceArticle);
 
-                        var targetArticle = new Article(record["target"].As<int>(), record["targetPMID"].As<int>());
+                        var targetArticle = new Article(record["target"].As<int>());
                         var destArticleIndex = nodes.IndexOf(targetArticle);
                         destArticleIndex = destArticleIndex == -1 ? nodes.Count : destArticleIndex;
                         nodes.Add(targetArticle);
 
 
                         links.Add(new Citation(sourceArticle.ArticleID, targetArticle.ArticleID));
+
+                        //test stuff
+                        Console.WriteLine(sourceArticle.ArticleID + "  - [{relationship}] -> " + targetArticle.ArticleID);
 
                     }
                     return new Graph(nodes, links);
@@ -67,7 +89,7 @@ namespace MemgraphApplication.Repositories
 
         private string Database()
         {
-            return System.Environment.GetEnvironmentVariable("DATABASE") ?? "flights";
+            return System.Environment.GetEnvironmentVariable("DATABASE") ?? "articles";
 
         }
 

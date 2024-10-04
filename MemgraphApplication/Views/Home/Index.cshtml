@@ -2,99 +2,103 @@
     ViewData["Title"] = "Article Graph";
 }
 
-﻿
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://uploads-ssl.webflow.com/5e7ceb09657a69bdab054b3a/5ea9d03561073b122a2bcf58_favicon.png" rel="shortcut icon" type="image/x-icon">
-
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script src="https://d3js.org/d3.v6.min.js" charset="utf-8"></script>
-
-    <title>Graph Demo</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <title>Article Graph</title>
+    
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand">Graph Demo</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
     </nav>
 
     <div id="graph"></div>
+    <div class="tooltip" style="opacity:0;"></div>
 
-    <script type="text/javascript">
-        const width = window.innerWidth, height = window.innerHeight;
+    <script>
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-        const svg = d3.select("#graph").append("svg").attr("width", width).attr("height", height).attr("pointer-events", "all");
-
-        var div = d3.select("body").append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
+        const svg = d3.select("#graph").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("pointer-events", "all");
 
         d3.json("/graph").then(function (graph) {
+            // const nodes = graph.nodes;
+            // const links = graph.links;
 
-
-            const links = graph.links.map(d => Object.create(d));
-            const nodes = graph.nodes.map(d => Object.create(d));
+            const nodes = [
+                { ArticleID: 7402, PMIDs: [] },
+                { ArticleID: 16908, PMIDs: [] },
+                // add more nodes as necessary
+            ];
+            const links = [
+                { source: nodes[0], target: nodes[1] }, // Using the actual node objects
+            ];
 
             const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.title))
+                .force("link", d3.forceLink().id(d => d.ArticleID).distance(100))
                 .force("charge", d3.forceManyBody())
                 .force("center", d3.forceCenter(width / 2, height / 2));
 
-            var g = svg.append("g")
-                .attr("class", "everything");
+            const link = svg.append("g")
+                .attr("class", "links")
+                .selectAll("line")
+                .data(links)
+                .enter().append("line")
+                .attr("class", "link");
 
-            const link = g.append("g").selectAll("lines")
-                .data(links).enter().append("line").attr("class", "link");
-
-            const node = g.append("g").selectAll("circle")
-                .data(nodes).enter().append("circle")
-                .attr("class", function (d) { return "node " + d.label; })
+            const node = svg.append("g")
+                .attr("class", "nodes")
+                .selectAll("circle")
+                .data(nodes)
+                .enter().append("circle")
+                .attr("class", "node article")
                 .attr("r", 10)
                 .call(d3.drag()
                     .on("start", dragstarted)
                     .on("drag", dragged)
                     .on("end", dragended))
+                .on("mouseover", function (event, d) {
+                    d3.select(".tooltip")
+                        .style("opacity", 1)
+                        .text(`ArticleID: ${d.ArticleID}`);
+                })
+                .on("mousemove", function (event) {
+                    d3.select(".tooltip")
+                        .style("top", (event.pageY - 10) + "px")
+                        .style("left", (event.pageX + 10) + "px");
+                })
+                .on("mouseout", function () {
+                    d3.select(".tooltip").style("opacity", 0);
+                });
 
-
-            node.append("title").text(function (d) { return d.name; })
-
-            node.on("mouseover", function (d) { tooltip.text(d.name); return tooltip.style("visibility", "visible"); });
-            node.on("mousemove", function () { return tooltip.style("top", (d3.event.pageY - 10) + "px").style("left", (d3.event.pageX + 10) + "px"); });
-            node.on("mouseout", function () { return tooltip.style("visibility", "hidden"); });
+            node.append("title").text(d => `Article ID: ${d.ArticleID}`);
 
             simulation
                 .nodes(nodes)
                 .on("tick", ticked);
 
-            simulation
-                .force("link")
+            simulation.force("link")
                 .links(links);
 
-            var zoom_handler = d3.zoom()
-                .on("zoom", zoom_actions);
-
-            function zoom_actions() {
-                g.attr("transform", event.transform);
-            }
-
-            svg.call(zoom_handler);
-
             function ticked() {
-                link.attr("x1", function (d) { return d.source.x; })
-                    .attr("y1", function (d) { return d.source.y; })
-                    .attr("x2", function (d) { return d.target.x; })
-                    .attr("y2", function (d) { return d.target.y; });
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
 
-                node.attr("cx", function (d) { return d.x; })
-                    .attr("cy", function (d) { return d.y; });
+                node.attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
             }
 
             function dragstarted(event) {
@@ -113,17 +117,19 @@
                 event.subject.fx = null;
                 event.subject.fy = null;
             }
+        }).catch(function (error) {
+            console.error("Error fetching graph data:", error);
         });
-
     </script>
 
-    <style type="text/css">
+    <style>
         .node {
             stroke: #222;
             stroke-width: 1.5px;
+            color: mediumpurple;
         }
 
-            .node.airport {
+            .node.article {
                 fill: #BBB;
             }
 
@@ -132,8 +138,8 @@
             stroke-opacity: .6;
             stroke-width: 1px;
         }
+
+
     </style>
-
-
 </body>
 </html>

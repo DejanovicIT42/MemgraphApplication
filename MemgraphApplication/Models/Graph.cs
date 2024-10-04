@@ -17,14 +17,12 @@
     {
 
         public int ArticleID { get; set; }
-        public int PMID { get; set; }
-        public string Title { get; }
-        public string Label { get; }
+        //public int PMID { get; set; }
 
-        public Article(int articleID, int pmid)
+        public Article(int articleID)
         {
             ArticleID = articleID;
-            PMID = pmid;
+            //PMID = pmid;
         }
 
         //public override bool Equals(object obj)
@@ -36,7 +34,7 @@
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ArticleID, PMID);
+            return HashCode.Combine(ArticleID);
         }
     }
 

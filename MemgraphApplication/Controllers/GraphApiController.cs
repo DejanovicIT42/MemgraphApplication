@@ -2,8 +2,7 @@
 
 namespace MemgraphApplication.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
+   
     public class GraphApiController : Controller
     {
         [HttpGet]
