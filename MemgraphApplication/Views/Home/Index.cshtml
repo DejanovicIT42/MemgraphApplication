@@ -20,7 +20,16 @@
         <a class="navbar-brand">Graph Demo</a>
     </nav>
 
-    <div id="graph"></div>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="graph-container">
+                <div id="graph"></div>
+            </div>
+        </div>
+    </div>
+
+
+
     <div class="tooltip" style="opacity:0;"></div>
 
     <script>
@@ -39,10 +48,9 @@
             const nodes = [
                 { ArticleID: 7402, PMIDs: [] },
                 { ArticleID: 16908, PMIDs: [] },
-                // add more nodes as necessary
             ];
             const links = [
-                { source: nodes[0], target: nodes[1] }, // Using the actual node objects
+                { source: nodes[0], target: nodes[1] },
             ];
 
             const simulation = d3.forceSimulation(nodes)
@@ -126,17 +134,25 @@
         .node {
             stroke: #222;
             stroke-width: 1.5px;
-            color: mediumpurple;
         }
 
             .node.article {
-                fill: #BBB;
+                fill: #735c99;
             }
 
         .link {
             stroke: #999;
             stroke-opacity: .6;
             stroke-width: 1px;
+        }
+
+        .graph-container {
+            border: 5px solid #E1CEB1;
+            border-radius: 1px; /* coskovi */
+            padding: 10px; /* Space between the border and the graph */
+            margin: 5px; /* Space around the entire container */
+            background-color: #F7F9F2; /* Optional: background color for the container */
+
         }
 
 
