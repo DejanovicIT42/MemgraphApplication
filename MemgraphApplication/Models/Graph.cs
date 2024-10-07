@@ -42,11 +42,13 @@
     {
         public int Source { get; }
         public int Target { get; }
+        public long RelationshipId { get; }
 
-        public Citation(int source, int target)
+        public Citation(int source, int target, long relationshipId)
         {
             Source = source;
             Target = target;
+            RelationshipId = relationshipId;
         }
     }
 }
