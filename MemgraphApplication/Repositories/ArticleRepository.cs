@@ -54,7 +54,6 @@ namespace MemgraphApplication.Repositories
                     {
                         var path = record["path"].As<IPath>();
 
-                        // Add the start node (source)
                         var startNode = path.Start.As<INode>();
                         int sourceId = startNode.Properties["ArticleID"].As<int>();
                         if (!nodes.Any(n => n.ArticleID == sourceId))
@@ -62,11 +61,10 @@ namespace MemgraphApplication.Repositories
                             nodes.Add(new Article(sourceId));
                         }
 
-                        // Iterate through relationships and nodes in the path
                         for (int i = 0; i < path.Relationships.Count; i++)
                         {
                             var relationship = path.Relationships[i];
-                            var currentNode = path.Nodes[i + 1].As<INode>(); // Next node in the path
+                            var currentNode = path.Nodes[i + 1].As<INode>();
 
                             int targetId = currentNode.Properties["ArticleID"].As<int>();
                             if (!nodes.Any(n => n.ArticleID == targetId))
@@ -74,32 +72,13 @@ namespace MemgraphApplication.Repositories
                                 nodes.Add(new Article(targetId));
                             }
 
-                            // Create a Citation from source to target
                             links.Add(new Citation(sourceId, targetId, relationship.Id));
 
-                            // Print the relationship for debugging
+                            //debugging
                             Console.WriteLine($"ArticleID {sourceId} - [{relationship.Id}] -> ArticleID {targetId}");
                         }
                     });
 
-                    //foreach (var record in records)
-                    //{
-                    //    var sourceArticle = new Article(record["source"].As<int>());
-                    //    var originArticleIndex = nodes.Count;
-                    //    nodes.Add(sourceArticle);
-
-                    //    var targetArticle = new Article(record["target"].As<int>());
-                    //    var destArticleIndex = nodes.IndexOf(targetArticle);
-                    //    destArticleIndex = destArticleIndex == -1 ? nodes.Count : destArticleIndex;
-                    //    nodes.Add(targetArticle);
-
-
-                    //    links.Add(new Citation(sourceArticle.ArticleID, targetArticle.ArticleID));
-
-                    //    //test stuff
-                    //    Console.WriteLine(sourceArticle.ArticleID + "  - [{relationship}] -> " + targetArticle.ArticleID);
-
-                    //}
                     return new Graph(nodes, links);
 
                 });

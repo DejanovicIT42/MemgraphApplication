@@ -5,168 +5,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://uploads-ssl.webflow.com/5e7ceb09657a69bdab054b3a/5ea9d03561073b122a2bcf58_favicon.png" rel="shortcut icon" type="image/x-icon">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script src="https://d3js.org/d3.v6.min.js"></script>
-    <title>Article Graph</title>
-    
+    <meta charset="UTF-8" />
+    <title>Orb | Article Graph</title>
+    <script src="@Html.Raw("https://unpkg.com/@memgraph/orb@0.4.3/dist/browser/orb.min.js")"></script>
+    <style>
+        #graph {
+            border: 1px solid #e0e0e0;
+            width: 600px;
+            height: 600px;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand">Graph Demo</a>
-    </nav>
-
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="graph-container">
-                <div id="graph"></div>
-            </div>
-        </div>
-    </div>
-
-
-
-    <div class="tooltip" style="opacity:0;"></div>
-
+    <div id="graph"></div>
     <script>
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        async function fetchGraph() {
+            const limit = 50; // Set your limit here or retrieve from user input
+            const response = await fetch(`/graph?limit=${limit}`);
+            const graphData = await response.json();
 
-        const svg = d3.select("#graph").append("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("pointer-events", "all");
-
-        d3.json("/graph?limit=50").then(function (graph) {
-            // const nodes = graph.nodes;
-            // const links = graph.links;
-
-            const nodes = graph.nodes;
-            const links = graph.links.map(link => ({
-                source: nodes.find(node => node.ArticleID === link.source),
-                target: nodes.find(node => node.ArticleID === link.target)
+            const nodes = graphData.nodes.map(node => ({
+                id: node.articleID,
+                label: `Article ${node.articleID}`
             }));
 
-            console.log(nodes);
-            console.log(links);
-            // const nodes = [
-            //     { ArticleID: 7402, PMIDs: [] },
-            //     { ArticleID: 16908, PMIDs: [] },
-            // ];
-            // const links = [
-            //     { source: nodes[0], target: nodes[1] },
-            // ];
+            const edges = graphData.links.map(link => ({
+                id: `${link.source}-${link.target}`,
+                start: link.source,
+                end: link.target,
+                label: `Cites`
+            }));
 
-            const simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink().id(d => d.ArticleID).distance(50))
-                .force("charge", d3.forceManyBody())
-                .force("center", d3.forceCenter(width / 2, height / 2));
+            const container = document.getElementById("graph");
+            const orb = new Orb.Orb(container);
+            orb.data.setup({ nodes, edges });
+            orb.view.render(() => {
+                orb.view.recenter();
+            });
+        }
 
-            const link = svg.append("g")
-                .attr("class", "links")
-                .selectAll("line")
-                .data(links)
-                .enter().append("line")
-                .attr("class", "link");
-
-            const node = svg.append("g")
-                .attr("class", "nodes")
-                .selectAll("circle")
-                .data(nodes)
-                .enter().append("circle")
-                .attr("class", "node article")
-                .attr("r", 10)
-                .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended))
-                .on("mouseover", function (event, d) {
-                    d3.select(".tooltip")
-                        .style("opacity", 1)
-                        .text(`ArticleID: ${d.ArticleID}`); // Fix it: Ensure ArticleID is correctly referenced
-                })
-                .on("mousemove", function (event) {
-                    d3.select(".tooltip")
-                        .style("top", (event.pageY - 20) + "px")
-                        .style("left", (event.pageX + 10) + "px");
-                })
-                .on("mouseout", function () {
-                    d3.select(".tooltip").style("opacity", 0);
-                });
-
-            node.append("title").text(d => `Article ID: ${d.ArticleID}`);
-
-            simulation
-                .nodes(nodes)
-                .on("tick", ticked);
-
-            simulation.force("link")
-                .id(d => d.ArticleID)
-                .links(links);
-
-            function ticked() {
-                link.attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-
-                node.attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
-            }
-
-            function dragstarted(event) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                event.subject.fx = event.x;
-                event.subject.fy = event.y;
-            }
-
-            function dragged(event) {
-                event.subject.fx = event.x;
-                event.subject.fy = event.y;
-            }
-
-            function dragended(event) {
-                if (!event.active) simulation.alphaTarget(0);
-                event.subject.fx = null;
-                event.subject.fy = null;
-            }
-        }).catch(function (error) {
-            console.error("Error fetching graph data:", error);
-        });
+        fetchGraph();
     </script>
-
-    <style>
-        .node {
-            stroke: #222;
-            stroke-width: 1.5px;
-        }
-
-            .node.article {
-                fill: #735c99;
-            }
-
-        .link {
-            stroke: #999;
-            stroke-opacity: .6;
-            stroke-width: 1px;
-        }
-
-        .graph-container {
-            width: 100%;
-            height: 600px;
-            border: 5px solid #E1CEB1;
-            border-radius: 1px; /* coskovi */
-            padding: 10px; /* Space between the border and the graph */
-            margin: 5px; /* Space around the entire container */
-            background-color: #F7F9F2; /* Optional: background color for the container */
-
-        }
-
-
-    </style>
 </body>
 </html>
