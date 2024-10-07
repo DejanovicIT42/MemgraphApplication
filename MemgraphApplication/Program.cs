@@ -11,9 +11,6 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
 builder.Services.AddSingleton(GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.None));
 
-
-
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

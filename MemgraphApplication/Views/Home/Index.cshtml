@@ -7,16 +7,31 @@
 <head>
     <meta charset="UTF-8" />
     <title>Orb | Article Graph</title>
-    <script src="@Html.Raw("https://unpkg.com/@memgraph/orb@0.4.3/dist/browser/orb.min.js")"></script>
+    
+@*     <script src="@Html.Raw("https://unpkg.com/@memgraph/orb@0.4.3/dist/browser/orb.min.js")"></script>
+ *@
+
+    <script src="~/js/orb.min.js"></script>
+    <script src="~/js/orb.worker.min.js"></script>
+    <script src="~/js/orb.worker.vendor.min.js"></script>
     <style>
         #graph {
             border: 1px solid #e0e0e0;
-            width: 600px;
+            width: 1300px;
             height: 600px;
+        }
+
+        .nodes {
+            stroke: #222;
+            stroke-width: 1.5px;
+            color: #735c99
         }
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand">Graph</a>
+    </nav>
     <div id="graph"></div>
     <script>
         async function fetchGraph() {
@@ -33,12 +48,62 @@
                 id: `${link.source}-${link.target}`,
                 start: link.source,
                 end: link.target,
-                label: `Cites`
+                label: `cites`
             }));
 
             const container = document.getElementById("graph");
+
             const orb = new Orb.Orb(container);
+            orb.view.setSettings({
+                render: {
+                    backgroundColor: '#DDDDDD',
+                },
+            });
+
+            // Assign a basic style
+            orb.data.setDefaultStyle({
+                getNodeStyle(node) {
+                    const basicStyle = {
+                        borderColor: '#1d1d1d',
+                        borderWidth: 0.6,
+                        color: '#735c99',
+                        colorHover: '#e7644e', 
+                        colorSelected: '#e7644e',
+                        fontSize: 3,
+                        label: node.data.label,
+                        size: 6,
+                    };
+
+                    if (node.data.label === 'Node A') {
+                        return {
+                            ...basicStyle,
+                            size: 10,
+                            color: '#735c99',
+                            zIndex: 1,
+                        };
+                    }
+
+                    return {
+                        ...basicStyle
+                    };
+                },
+                getEdgeStyle(edge) {
+                    return {
+                        color: '#999999',
+                        colorHover: '#1d1d1d',
+                        colorSelected: '#1d1d1d',
+                        fontSize: 3,
+                        width: 0.3,
+                        widthHover: 0.9,
+                        widthSelected: 0.9,
+                        label: edge.data.label,
+                    };
+                },
+            });
+
+            // Initialize nodes and edges
             orb.data.setup({ nodes, edges });
+
             orb.view.render(() => {
                 orb.view.recenter();
             });

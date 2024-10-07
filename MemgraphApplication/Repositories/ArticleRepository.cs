@@ -26,8 +26,13 @@ namespace MemgraphApplication.Repositories
             var session = _driver.AsyncSession();
             try
             {
-                var query = @"MATCH path = (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
+                var query = @"MATCH path = (a:Article {ArticleID: 7402})-[r]->(b:Article)" +
                         "RETURN path";
+
+                //var query = "MATCH path = (n)- [*WSHORTEST(r, n | r.weight)]->(m) " +
+                //"FOREACH(i IN CASE WHEN m IS NOT NULL THEN[1] ELSE[] END | " +
+                //"FOREACH(x IN[m] | SET x.visited = true)) " +
+                //"RETURN DISTINCT path";
 
                 return await session.ExecuteReadAsync(async transaction =>
                 {
@@ -38,7 +43,6 @@ namespace MemgraphApplication.Repositories
 
                     //var cursor = await transaction.RunAsync(@"MATCH (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
                     //    "RETURN a.ArticleID AS source, r, b.ArticleID AS target");
-
 
                     //var cursor = await transaction.RunAsync(@"MATCH (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
                     //    "RETURN a, r, b;");
@@ -87,18 +91,6 @@ namespace MemgraphApplication.Repositories
             {
                 await session.CloseAsync();
             }
-
-        }
-
-        private void WithDatabase(SessionConfigBuilder sessionConfigBuilder)
-        {
-            sessionConfigBuilder.WithDatabase(Database());
-
-        }
-
-        private string Database()
-        {
-            return System.Environment.GetEnvironmentVariable("DATABASE") ?? "articles";
 
         }
 
