@@ -29,7 +29,15 @@ namespace MemgraphApplication.Controllers
         public async Task<IActionResult> FetchGraph([FromQuery(Name = "limit")] int limit)
         {
             var graph = await _articleRepository.FetchGraph(limit <= 0 ? 50 : limit);
-            return Json(graph); // Return the data as JSON
+            return Json(graph);
+        }
+
+        [Route("/graph/expand")]
+        [HttpGet]
+        public async Task<IActionResult> ExpandNode([FromQuery(Name = "nodeId")] int nodeId)
+        {
+            var graph = await _articleRepository.FetchNodeRelationships(nodeId);
+            return Json(graph);
         }
     }
 }

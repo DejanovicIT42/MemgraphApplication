@@ -9,11 +9,21 @@
     <title>Orb | Article Graph</title>
     
 @*     <script src="@Html.Raw("https://unpkg.com/@memgraph/orb@0.4.3/dist/browser/orb.min.js")"></script>
- *@
-
     <script src="~/js/orb.min.js"></script>
     <script src="~/js/orb.worker.min.js"></script>
+ *@
+
+
     <script src="~/js/orb.worker.vendor.min.js"></script>
+    <script src="~/js/orb.min.js"></script>
+    <script>
+        if (window.Worker) {
+            const worker = new Worker("~/js/orb.worker.min.js");
+        } else {
+            console.error("Web Workers are not supported in this browser.");
+        }
+    </script>
+
     <style>
         #graph {
             border: 1px solid #e0e0e0;
@@ -26,6 +36,23 @@
             stroke-width: 1.5px;
             color: #735c99
         }
+
+        #sidePanel {
+            display: none;
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background-color: #f1f1f1;
+            border-left: 1px solid #e0e0e0;
+            padding: 20px;
+        }
+
+        .navbar {
+            margin-bottom: 20px;
+        }
+
     </style>
 </head>
 <body>
@@ -33,6 +60,13 @@
         <a class="navbar-brand">Graph</a>
     </nav>
     <div id="graph"></div>
+
+    <!-- Side Panel for Expand-->
+    <div id="sidePanel" style="display:none; position: fixed; right: 0; top: 0; width: 250px; height: 100%; background-color: #f1f1f1; border-left: 1px solid #e0e0e0; padding: 20px;">
+        <h3>Node Info</h3>
+        <p id="nodeId">Article ID: </p>
+        <button id="expandBtn">Expand</button>
+    </div>
     <script>
         async function fetchGraph() {
             const limit = 50; // Set your limit here or retrieve from user input
@@ -52,22 +86,39 @@
             }));
 
             const container = document.getElementById("graph");
-
             const orb = new Orb.Orb(container);
+
             orb.view.setSettings({
                 render: {
                     backgroundColor: '#DDDDDD',
                 },
             });
 
-            // Assign a basic style
+            // Handle node click event to show the side panel with expand button
+            orb.events.on('nodeClick', (event) => {
+                const node = event.node;
+                // Show side panel
+                const sidePanel = document.getElementById("sidePanel");
+                const nodeIdDisplay = document.getElementById("nodeId");
+                const expandBtn = document.getElementById("expandBtn");
+
+                sidePanel.style.display = 'block';
+                nodeIdDisplay.textContent = `Article ID: ${node.data.id}`;
+
+                // Attach expand functionality to the expand button
+                expandBtn.onclick = async () => {
+                    await expandNode(node.data.id);
+                };
+            });
+
+            // style
             orb.data.setDefaultStyle({
                 getNodeStyle(node) {
                     const basicStyle = {
                         borderColor: '#1d1d1d',
                         borderWidth: 0.6,
                         color: '#735c99',
-                        colorHover: '#e7644e', 
+                        colorHover: '#735c99',
                         colorSelected: '#e7644e',
                         fontSize: 3,
                         label: node.data.label,
@@ -83,9 +134,7 @@
                         };
                     }
 
-                    return {
-                        ...basicStyle
-                    };
+                    return basicStyle;
                 },
                 getEdgeStyle(edge) {
                     return {
@@ -101,12 +150,38 @@
                 },
             });
 
-            // Initialize nodes and edges
+            // Load nodes and edges into the graph
             orb.data.setup({ nodes, edges });
 
             orb.view.render(() => {
                 orb.view.recenter();
             });
+
+        }
+
+        // Function to expand a node and fetch relationships
+        async function expandNode(nodeId) {
+            // Fetch new relationships for the clicked node
+            const response = await fetch(`/graph/expand?nodeId=${nodeId}`);
+            const graphData = await response.json();
+
+            const newNodes = graphData.nodes.map(node => ({
+                id: node.articleID,
+                label: `Article ${node.articleID}`
+            }));
+
+            const newEdges = graphData.links.map(link => ({
+                id: `${link.source}-${link.target}`,
+                start: link.source,
+                end: link.target,
+                label: `cites`
+            }));
+
+            // Add new nodes and edges to the graph
+            orb.data.add({ nodes: newNodes, edges: newEdges });
+
+            // Re-render the graph to reflect the updates
+            orb.view.render(() => orb.view.recenter());
         }
 
         fetchGraph();
