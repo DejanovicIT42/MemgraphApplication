@@ -97,13 +97,14 @@
                         label: `cites`
                     }));
 
+
                     // Merge new nodes and edges into the graph
                     orb.data.merge({
                         nodes: newNodes,
                         edges: newEdges,
                     });
 
-                    // Re-render the graph to reflect the updates
+                    // Re-render the graph
                     orb.view.render(() => orb.view.recenter());
                 }
             };
@@ -125,6 +126,7 @@
                 end: link.target,
                 label: `cites`
             }));
+
 
             const container = document.getElementById("graph");
             GraphManager.init(container);
@@ -179,6 +181,11 @@
                         widthHover: 0.9,
                         widthSelected: 0.9,
                         label: edge.data.label,
+                        arrow: {
+                            enabled: true,
+                            width: 5,
+                            color: '#999999',
+                        },
                     };
                 },
             });

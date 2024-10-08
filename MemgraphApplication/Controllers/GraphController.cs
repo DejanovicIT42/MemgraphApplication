@@ -16,14 +16,6 @@ namespace MemgraphApplication.Controllers
             _articleRepository = articleRepository;
         }
 
-
-        //[Route("/graph")]
-        //[HttpGet]
-        //public async Task<Graph> FetchGraph([FromQuery(Name = "limit")] int limit)
-        //{
-        //    return await _articleRepository.FetchGraph(limit <= 0 ? 50 : limit);
-        //}
-
         [Route("/graph")]
         [HttpGet]
         public async Task<IActionResult> FetchGraph([FromQuery(Name = "limit")] int limit)
@@ -39,5 +31,6 @@ namespace MemgraphApplication.Controllers
             var graph = await _articleRepository.FetchNodeRelationships(nodeId);
             return Json(graph);
         }
+
     }
 }

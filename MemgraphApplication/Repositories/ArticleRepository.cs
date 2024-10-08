@@ -29,8 +29,21 @@ namespace MemgraphApplication.Repositories
                 //var query = @"MATCH path = (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
                 //        "RETURN path";
 
-                var query = @"MATCH path = (a:Article {ArticleID: 1})-[r]->(b:Article)" +
+                //var query = @"MATCH path = (a:Article {ArticleID: 4})-[r]-(b:Article)" +
+                //        "RETURN path";
+
+                var query = @"MATCH path = (a:Article {ArticleID: 1})-[r]-(b:Article)" +
                         "RETURN path";
+
+                //var query = @"MATCH path = (a:Article {ArticleID: 13974})-[r]-(b:Article)" +
+                //        "RETURN path";
+
+
+                //hardcoding the solution
+                //var query = @"MATCH path = (a:Article {ArticleID: 16716})<-[r]-(b:Article)" +
+                //        "RETURN path";
+
+
 
                 //var query = "MATCH path = (n)- [*WSHORTEST(r, n | r.weight)]->(m) " +
                 //    "FOREACH(i IN CASE WHEN m IS NOT NULL THEN[1] ELSE[] END | " +
@@ -45,14 +58,14 @@ namespace MemgraphApplication.Repositories
                     var nodes = new List<Article>();
                     var links = new List<Citation>();
 
-                    //var records = await query.ToListAsync();
-
                     await cursor.ForEachAsync(record =>
                     {
                         var path = record["path"].As<IPath>();
 
                         var startNode = path.Start.As<INode>();
                         int sourceId = startNode.Properties["ArticleID"].As<int>();
+
+
                         if (!nodes.Any(n => n.ArticleID == sourceId))
                         {
                             nodes.Add(new Article(sourceId));
@@ -69,10 +82,16 @@ namespace MemgraphApplication.Repositories
                                 nodes.Add(new Article(targetId));
                             }
 
-                            links.Add(new Citation(sourceId, targetId, relationship.Id));
-
-                            //debugging
-                            //Console.WriteLine($"ArticleID {sourceId} - [{relationship.Id}] -> ArticleID {targetId}");
+                            if (relationship.StartNodeId == startNode.Id)
+                            {
+                                // Outgoing relationship
+                                links.Add(new Citation(sourceId, targetId, relationship.Id));
+                            }
+                            else
+                            {
+                                // Incoming relationship
+                                links.Add(new Citation(targetId, sourceId, relationship.Id));
+                            }
                         }
                     });
 
@@ -86,6 +105,7 @@ namespace MemgraphApplication.Repositories
             }
 
         }
+
 
         public async Task<Graph> FetchNodeRelationships(int articleId)
         {
@@ -115,7 +135,14 @@ namespace MemgraphApplication.Repositories
                         if (!nodes.Any(n => n.ArticleID == targetId))
                             nodes.Add(new Article(targetId));
 
-                        links.Add(new Citation(sourceId, targetId, relationship.Id));
+                        if (relationship.StartNodeId == startNode.Id)
+                        {
+                            links.Add(new Citation(sourceId, targetId, relationship.Id));
+                        }
+                        else
+                        {
+                            links.Add(new Citation(targetId, sourceId, relationship.Id));
+                        }
                     });
 
                     return new Graph(nodes, links);
@@ -126,7 +153,6 @@ namespace MemgraphApplication.Repositories
                 await session.CloseAsync();
             }
         }
-
 
     }
 
