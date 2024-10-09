@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Transactions;
+using System.Text.Json;
 
 namespace MemgraphApplication.Repositories
 {
@@ -15,8 +16,7 @@ namespace MemgraphApplication.Repositories
 
         public ArticleRepository(IDriver driver)
         {
-            //_driver = driver;
-            _driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.None);
+            _driver = driver;
             using var session = _driver.Session();
         }
 
@@ -32,17 +32,11 @@ namespace MemgraphApplication.Repositories
                 //var query = @"MATCH path = (a:Article {ArticleID: 4})-[r]-(b:Article)" +
                 //        "RETURN path";
 
-                var query = @"MATCH path = (a:Article {ArticleID: 1})-[r]-(b:Article)" +
-                        "RETURN path";
-
                 //var query = @"MATCH path = (a:Article {ArticleID: 13974})-[r]-(b:Article)" +
                 //        "RETURN path";
 
-
-                //hardcoding the solution
-                //var query = @"MATCH path = (a:Article {ArticleID: 16716})<-[r]-(b:Article)" +
-                //        "RETURN path";
-
+                var query = @"MATCH path = (n:Article {ArticleID: 16716})<- [*WSHORTEST(r, n | r.weight)]-(m)" +
+                    "RETURN DISTINCT path";
 
 
                 //var query = "MATCH path = (n)- [*WSHORTEST(r, n | r.weight)]->(m) " +
@@ -62,35 +56,23 @@ namespace MemgraphApplication.Repositories
                     {
                         var path = record["path"].As<IPath>();
 
-                        var startNode = path.Start.As<INode>();
-                        int sourceId = startNode.Properties["ArticleID"].As<int>();
-
-
-                        if (!nodes.Any(n => n.ArticleID == sourceId))
+                        foreach (var node in path.Nodes)
                         {
-                            nodes.Add(new Article(sourceId));
+                            int nodeId = node.Properties["ArticleID"].As<int>();
+                            if (!nodes.Any(n => n.ArticleID == nodeId))
+                            {
+                                nodes.Add(new Article(nodeId));
+                            }
                         }
 
-                        for (int i = 0; i < path.Relationships.Count; i++)
+                        foreach (var relationship in path.Relationships)
                         {
-                            var relationship = path.Relationships[i];
-                            var currentNode = path.Nodes[i + 1].As<INode>();
+                            int sourceId = path.Nodes.First(n => n.Id == relationship.StartNodeId).Properties["ArticleID"].As<int>();
+                            int targetId = path.Nodes.First(n => n.Id == relationship.EndNodeId).Properties["ArticleID"].As<int>();
 
-                            int targetId = currentNode.Properties["ArticleID"].As<int>();
-                            if (!nodes.Any(n => n.ArticleID == targetId))
+                            if (!links.Any(l => l.Source == sourceId && l.Target == targetId))
                             {
-                                nodes.Add(new Article(targetId));
-                            }
-
-                            if (relationship.StartNodeId == startNode.Id)
-                            {
-                                // Outgoing relationship
                                 links.Add(new Citation(sourceId, targetId, relationship.Id));
-                            }
-                            else
-                            {
-                                // Incoming relationship
-                                links.Add(new Citation(targetId, sourceId, relationship.Id));
                             }
                         }
                     });
@@ -153,6 +135,59 @@ namespace MemgraphApplication.Repositories
                 await session.CloseAsync();
             }
         }
+
+        //bruh side
+        //public async Task<Graph> FetchMostReferencedNode()
+        //{
+        //    using (var session = _driver.Session())
+        //    {
+        //        var result = session.Run(
+        //            "MATCH path = (n:Article {ArticleID: 16716})<- [*WSHORTEST(r, n | r.weight)]-(m) RETURN DISTINCT path");
+
+        //        var nodes = new HashSet<object>();
+        //        var relationships = new List<object>();
+
+        //        foreach (var record in result)
+        //        {
+        //            var path = record["path"].As<IPath>();
+
+        //            // Collect Nodes
+        //            foreach (var node in path.Nodes)
+        //            {
+        //                nodes.Add(new
+        //                {
+        //                    id = node.Id,
+        //                    labels = node.Labels,
+        //                    properties = node.Properties
+        //                });
+        //            }
+
+        //            // Collect Relationships
+        //            foreach (var relationship in path.Relationships)
+        //            {
+        //                relationships.Add(new
+        //                {
+        //                    id = relationship.Id,
+        //                    startNodeId = relationship.StartNodeId,
+        //                    endNodeId = relationship.EndNodeId,
+        //                    type = relationship.Type,
+        //                    properties = relationship.Properties
+        //                });
+        //            }
+        //        }
+
+        //        // Serialize to JSON (using System.Text.Json)
+        //        var graphData = new
+        //        {
+        //            nodes = nodes.ToArray(),
+        //            relationships = relationships.ToArray()
+        //        };
+
+        //        return JsonSerializer.Serialize(graphData);
+        //    }
+        //}
+
+
 
     }
 

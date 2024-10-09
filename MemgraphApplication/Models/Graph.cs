@@ -11,6 +11,7 @@
             Nodes = nodes;
             Links = links;
         }
+
     }
 
     public class Article
