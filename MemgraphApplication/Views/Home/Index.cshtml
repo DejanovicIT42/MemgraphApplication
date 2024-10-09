@@ -112,8 +112,9 @@
         })();
 
         async function fetchGraph() {
-            const limit = 500; // limiter
-            const response = await fetch(`/graph?limit=${limit}`);
+            //const limit = 500; // limiter
+            // const response = await fetch(`/graph?limit=${limit}`);
+            const response = await fetch(`/graph`);
             const graphData = await response.json();
 
             const nodes = graphData.nodes.map(node => ({

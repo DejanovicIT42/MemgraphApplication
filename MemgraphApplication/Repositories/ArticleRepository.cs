@@ -20,7 +20,7 @@ namespace MemgraphApplication.Repositories
             using var session = _driver.Session();
         }
 
-        public async Task<Graph> FetchGraph(int limit)
+        public async Task<Graph> FetchGraph()
         {
 
             var session = _driver.AsyncSession();
@@ -43,10 +43,16 @@ namespace MemgraphApplication.Repositories
                     "WITH node, rank " +
                     "ORDER BY rank DESC " +
                     "LIMIT 1 " +
-                    "MATCH path = (node)<-[*WSHORTEST(r, node | r.weight)]-(m) " +
+                    "MATCH path = (node)<-[r *]-(m) " +
                     "RETURN DISTINCT path";
 
-                //var query = @"MATCH path = (n:Article {ArticleID: $articleId})<- [*WSHORTEST(r, n | r.weight)]-(m)" + 
+
+                //var query = "CALL katz_centrality.get() " +
+                //    "YIELD node, rank " +
+                //    "WITH node, rank " +
+                //    "ORDER BY rank DESC " +
+                //    "LIMIT 1 " +
+                //    "MATCH path = (node)-[*WSHORTEST(r, node | r.weight)]-(m) " +
                 //    "RETURN DISTINCT path";
 
                 return await session.ExecuteReadAsync(async transaction =>

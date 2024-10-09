@@ -18,9 +18,9 @@ namespace MemgraphApplication.Controllers
 
         [Route("/graph")]
         [HttpGet]
-        public async Task<IActionResult> FetchGraph([FromQuery(Name = "limit")] int limit)
+        public async Task<IActionResult> FetchGraph()
         {
-            var graph = await _articleRepository.FetchGraph(limit <= 0 ? 500 : limit);
+            var graph = await _articleRepository.FetchGraph();
             return Json(graph);
         }
 
