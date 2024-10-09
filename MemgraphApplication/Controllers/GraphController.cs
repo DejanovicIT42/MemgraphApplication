@@ -20,7 +20,7 @@ namespace MemgraphApplication.Controllers
         [HttpGet]
         public async Task<IActionResult> FetchGraph([FromQuery(Name = "limit")] int limit)
         {
-            var graph = await _articleRepository.FetchGraph(limit <= 0 ? 50 : limit);
+            var graph = await _articleRepository.FetchGraph(limit <= 0 ? 500 : limit);
             return Json(graph);
         }
 
@@ -31,6 +31,16 @@ namespace MemgraphApplication.Controllers
             var graph = await _articleRepository.FetchNodeRelationships(nodeId);
             return Json(graph);
         }
+
+        //[Route("/graph/most-relevant")]
+        //[HttpGet]
+        //public async Task<IActionResult> FetchMostRelevantArticle()
+        //{
+        //    var mostRelevantArticleId = await _articleRepository.FetchMostRelevantArticleId();
+
+        //    return Json(graph);
+        //}
+
 
     }
 }

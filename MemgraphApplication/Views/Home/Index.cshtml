@@ -56,6 +56,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand">Graph</a>
+        <button id="relevantBtn">Find Most Relevant Article</button>
     </nav>
 
     <div id="graph"></div>
@@ -111,7 +112,7 @@
         })();
 
         async function fetchGraph() {
-            const limit = 50; // limiter
+            const limit = 500; // limiter
             const response = await fetch(`/graph?limit=${limit}`);
             const graphData = await response.json();
 

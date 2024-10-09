@@ -35,13 +35,18 @@ namespace MemgraphApplication.Repositories
                 //var query = @"MATCH path = (a:Article {ArticleID: 13974})-[r]-(b:Article)" +
                 //        "RETURN path";
 
-                var query = @"MATCH path = (n:Article {ArticleID: 16716})<- [*WSHORTEST(r, n | r.weight)]-(m)" +
+                //var query = @"MATCH path = (n:Article {ArticleID: 16716})<- [*WSHORTEST(r, n | r.weight)]-(m)" +
+                //    "RETURN DISTINCT path";
+
+                var query = @"CALL katz_centrality.get() " +
+                    "YIELD node, rank " +
+                    "WITH node, rank " +
+                    "ORDER BY rank DESC " +
+                    "LIMIT 1 " +
+                    "MATCH path = (node)<-[*WSHORTEST(r, node | r.weight)]-(m) " +
                     "RETURN DISTINCT path";
 
-
-                //var query = "MATCH path = (n)- [*WSHORTEST(r, n | r.weight)]->(m) " +
-                //    "FOREACH(i IN CASE WHEN m IS NOT NULL THEN[1] ELSE[] END | " +
-                //    "FOREACH(x IN[m] | SET x.visited = true)) " +
+                //var query = @"MATCH path = (n:Article {ArticleID: $articleId})<- [*WSHORTEST(r, n | r.weight)]-(m)" + 
                 //    "RETURN DISTINCT path";
 
                 return await session.ExecuteReadAsync(async transaction =>
@@ -94,7 +99,7 @@ namespace MemgraphApplication.Repositories
             var session = _driver.AsyncSession();
             try
             {
-                var query = @"MATCH (a:Article {ArticleID: $articleId})-[r]->(b:Article)
+                var query = @"MATCH (a:Article {ArticleID: $articleId})-[r]-(b:Article)
                       RETURN a, r, b";
 
                 return await session.ExecuteReadAsync(async transaction =>
@@ -136,59 +141,37 @@ namespace MemgraphApplication.Repositories
             }
         }
 
-        //bruh side
-        //public async Task<Graph> FetchMostReferencedNode()
-        //{
-        //    using (var session = _driver.Session())
-        //    {
-        //        var result = session.Run(
-        //            "MATCH path = (n:Article {ArticleID: 16716})<- [*WSHORTEST(r, n | r.weight)]-(m) RETURN DISTINCT path");
 
-        //        var nodes = new HashSet<object>();
-        //        var relationships = new List<object>();
+        public async Task<int> FetchMostRelevantArticleId()
+        {
+            var session = _driver.AsyncSession();
+            try
+            {
+                var query = @"CALL katz_centrality.get()" +
+                      "YIELD node, rank" +
+                      "RETURN node, rank" +
+                      "ORDER BY rank DESC" +
+                      "LIMIT 1";
 
-        //        foreach (var record in result)
-        //        {
-        //            var path = record["path"].As<IPath>();
+                return await session.ExecuteReadAsync(async transaction =>
+                {
+                    var cursor = await transaction.RunAsync(query);
+                    var articleId = 0;
 
-        //            // Collect Nodes
-        //            foreach (var node in path.Nodes)
-        //            {
-        //                nodes.Add(new
-        //                {
-        //                    id = node.Id,
-        //                    labels = node.Labels,
-        //                    properties = node.Properties
-        //                });
-        //            }
+                    await cursor.ForEachAsync(record =>
+                    {
+                        var node = record["node"].As<INode>();
+                        articleId = node.Properties["ArticleID"].As<int>();
+                    });
 
-        //            // Collect Relationships
-        //            foreach (var relationship in path.Relationships)
-        //            {
-        //                relationships.Add(new
-        //                {
-        //                    id = relationship.Id,
-        //                    startNodeId = relationship.StartNodeId,
-        //                    endNodeId = relationship.EndNodeId,
-        //                    type = relationship.Type,
-        //                    properties = relationship.Properties
-        //                });
-        //            }
-        //        }
-
-        //        // Serialize to JSON (using System.Text.Json)
-        //        var graphData = new
-        //        {
-        //            nodes = nodes.ToArray(),
-        //            relationships = relationships.ToArray()
-        //        };
-
-        //        return JsonSerializer.Serialize(graphData);
-        //    }
-        //}
-
-
-
+                    return articleId;
+                });
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
     }
 
 }
