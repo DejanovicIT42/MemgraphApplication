@@ -26,8 +26,6 @@ namespace MemgraphApplication.Repositories
             var session = _driver.AsyncSession();
             try
             {
-                //var query = @"MATCH path = (a:Article {ArticleID: 7402})-[r]->(b:Article {ArticleID: 16908})" +
-                //        "RETURN path";
 
                 //var query = @"MATCH path = (a:Article {ArticleID: 4})-[r]-(b:Article)" +
                 //        "RETURN path";
@@ -35,25 +33,25 @@ namespace MemgraphApplication.Repositories
                 //var query = @"MATCH path = (a:Article {ArticleID: 13974})-[r]-(b:Article)" +
                 //        "RETURN path";
 
-                //var query = @"MATCH path = (n:Article {ArticleID: 16716})<- [*WSHORTEST(r, n | r.weight)]-(m)" +
+                //var query = @"MATCH path = (n:Article {ArticleID: 13974})<- [*WSHORTEST(r, n | r.weight)]-(m)" +
                 //    "RETURN DISTINCT path";
 
-                var query = @"CALL katz_centrality.get() " +
-                    "YIELD node, rank " +
-                    "WITH node, rank " +
-                    "ORDER BY rank DESC " +
-                    "LIMIT 1 " +
-                    "MATCH path = (node)<-[r *]-(m) " +
-                    "RETURN DISTINCT path";
-
-
-                //var query = "CALL katz_centrality.get() " +
+                //var query = @"CALL katz_centrality.get() " +
                 //    "YIELD node, rank " +
                 //    "WITH node, rank " +
                 //    "ORDER BY rank DESC " +
                 //    "LIMIT 1 " +
-                //    "MATCH path = (node)-[*WSHORTEST(r, node | r.weight)]-(m) " +
+                //    "MATCH path = (node)<-[r *]-(m) " +
                 //    "RETURN DISTINCT path";
+
+
+                var query = "CALL katz_centrality.get() " +
+                    "YIELD node, rank " +
+                    "WITH node, rank " +
+                    "ORDER BY rank DESC " +
+                    "LIMIT 1 " +
+                    "MATCH path = (node)<-[*WSHORTEST(r, node | r.weight)]-(m) " +
+                    "RETURN DISTINCT path";
 
                 return await session.ExecuteReadAsync(async transaction =>
                 {
@@ -80,6 +78,8 @@ namespace MemgraphApplication.Repositories
                         {
                             int sourceId = path.Nodes.First(n => n.Id == relationship.StartNodeId).Properties["ArticleID"].As<int>();
                             int targetId = path.Nodes.First(n => n.Id == relationship.EndNodeId).Properties["ArticleID"].As<int>();
+
+                            Console.WriteLine($"Relationship: {sourceId} <- {relationship.Id} - {targetId}");
 
                             if (!links.Any(l => l.Source == sourceId && l.Target == targetId))
                             {
@@ -122,6 +122,8 @@ namespace MemgraphApplication.Repositories
 
                         int sourceId = startNode.Properties["ArticleID"].As<int>();
                         int targetId = endNode.Properties["ArticleID"].As<int>();
+
+                        
 
                         if (!nodes.Any(n => n.ArticleID == sourceId))
                             nodes.Add(new Article(sourceId));
